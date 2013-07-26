@@ -19,7 +19,7 @@ $ go install github.com/henrikhodne/tci
 ### show
 
 ```
-$ tci --repo henrikhodne/tci show
+$ tci show
 Build #6: Update API tests
 State          passed
 Type           push
