@@ -6,9 +6,12 @@ WARN_COLOR=\033[33;01m
 format:
 	go fmt ./...
 
+get-deps:
+	go get -d -v ./..
+
 test:
 	@echo "$(OK_COLOR)==> Testing tci...$(NO_COLOR)"
 	@go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs -n1 go get -d
 	go test ./...
 
-.PHONY: format test
+.PHONY: format get-deps test
