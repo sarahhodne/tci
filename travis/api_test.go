@@ -23,8 +23,13 @@ func testRequest(t *testing.T, r *http.Request, method, path string) {
 }
 
 func stubRequest(t *testing.T, method, path, body string) {
+	stubRequestWithStatus(t, method, path, body, http.StatusOK)
+}
+
+func stubRequestWithStatus(t *testing.T, method, path, body string, statusCode int) {
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testRequest(t, r, method, path)
+		w.WriteHeader(statusCode)
 		fmt.Fprint(w, body)
 	}))
 }
@@ -50,6 +55,22 @@ func TestGetRepository(t *testing.T) {
 
 	if !reflect.DeepEqual(repo, want) {
 		t.Errorf("client.GetRepository = %v, want %v", repo, want)
+	}
+}
+
+func TestGetRepository_NotFound(t *testing.T) {
+	stubRequestWithStatus(t, "GET", "/repos/foo/bar", `{}`, http.StatusNotFound)
+	defer teardown()
+
+	client := TravisClient{client: http.DefaultClient, BaseURL: server.URL}
+	repo, err := client.GetRepository("foo/bar")
+
+	if err == nil {
+		t.Errorf("client.GetRepository expected error, got none")
+	}
+
+	if !reflect.DeepEqual(repo, Repository{}) {
+		t.Errorf("client.GetRepository: expected empty repo, got %v", repo)
 	}
 }
 

@@ -42,6 +42,10 @@ func (c TravisClient) GetRepository(slug string) (Repository, error) {
 		return Repository{}, err
 	}
 
+	if resp["repo"] == nil {
+		return Repository{}, errors.New("GetRepository: Could not find repository")
+	}
+
 	repoInfo := resp["repo"].(map[string]interface{})
 	repo := Repository{
 		ID:          int(repoInfo["id"].(float64)),
@@ -55,6 +59,10 @@ func (c TravisClient) GetBuild(id int) (Build, error) {
 	resp, err := NewRequest(c, fmt.Sprintf("builds/%d", id), "")
 	if err != nil {
 		return Build{}, err
+	}
+
+	if resp["build"] == nil {
+		return Build{}, errors.New("GetBuild: Could not find build")
 	}
 
 	buildInfo := resp["build"].(map[string]interface{})

@@ -25,8 +25,19 @@ func main() {
 			Action: func(c *cli.Context) {
 				slug := c.GlobalString("repo")
 				client := travis.NewClient()
-				repo, _ := client.GetRepository(slug)
-				build, _ := client.GetBuild(repo.LastBuildID)
+
+				repo, err := client.GetRepository(slug)
+				if err != nil {
+					fmt.Printf("Unable to get repository: %v\n", err)
+					return
+				}
+
+				build, err := client.GetBuild(repo.LastBuildID)
+				if err != nil {
+					fmt.Printf("Unable to get build: %v\n", err)
+					return
+				}
+
 				fmt.Printf("Build #%s: %s\n", build.Number, build.CommitSubject)
 				fmt.Printf("State:\t\t%s\n", build.State)
 			},
