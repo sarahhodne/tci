@@ -48,13 +48,15 @@ func TestGetRepository(t *testing.T) {
 		t.Errorf("client.GetRepository errored: %v", err)
 	}
 
-	want := Repository{
-		ID:          123,
-		LastBuildID: 234,
+	want := RepositoryResponse{
+		Repository: Repository{
+			ID:          123,
+			LastBuildID: 234,
+		},
 	}
 
 	if !reflect.DeepEqual(repo, want) {
-		t.Errorf("client.GetRepository = %v, want %v", repo, want)
+		t.Errorf("client.GetRepository = %+v, want %+v", repo, want)
 	}
 }
 
@@ -65,8 +67,8 @@ func TestGetRepository_NotFound(t *testing.T) {
 	client := TravisClient{client: http.DefaultClient, BaseURL: server.URL}
 	repo, _ := client.GetRepository("foo/bar")
 
-	if !reflect.DeepEqual(repo, Repository{}) {
-		t.Errorf("client.GetRepository: expected empty repo, got %v", repo)
+	if !reflect.DeepEqual(repo, RepositoryResponse{Repository{}}) {
+		t.Errorf("client.GetRepository: expected empty repo, got %+v", repo)
 	}
 }
 
@@ -80,13 +82,18 @@ func TestGetBuild(t *testing.T) {
 		t.Errorf("client.GetBuild errored: %v", err)
 	}
 
-	want := Build{
-		ID:     234,
-		Number: "1",
-		State:  "passed",
+	want := BuildResponse{
+		Build: Build{
+			ID:     234,
+			Number: "1",
+			State:  "passed",
+		},
+		Commit: Commit{
+			Message: "Hello, world",
+		},
 	}
 
 	if !reflect.DeepEqual(build, want) {
-		t.Errorf("client.GetBuild = %v, want %v", build, want)
+		t.Errorf("client.GetBuild = %+v, want %+v", build, want)
 	}
 }
