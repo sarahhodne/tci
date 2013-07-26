@@ -64,10 +64,10 @@ func TestGetBuild(t *testing.T) {
 	}
 
 	want := Build{
-		ID: 234,
-		Number: "1",
+		ID:            234,
+		Number:        "1",
 		CommitSubject: "Hello, world",
-		State: "passed",
+		State:         "passed",
 	}
 
 	if !reflect.DeepEqual(build, want) {
