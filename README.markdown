@@ -20,8 +20,14 @@ $ go install github.com/henrikhodne/tci
 
 ```
 $ tci --repo henrikhodne/tci show
-Build #3: Get dependencies when building on Travis
-State:		failed
+Build #6: Update API tests
+State          passed
+Type           push
+Branch         master
+Compare URL    https://github.com/henrikhodne/tci/compare/dc9524eb855d...d9bc220705b4
+Duration       3m0s
+Started        2013-07-26 15:48:56
+Finished       2013-07-26 15:50:40
 ```
 
 ## License
