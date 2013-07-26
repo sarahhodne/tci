@@ -5,10 +5,10 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/henrikhodne/tci/travis"
 	"os"
-	"strings"
 	"os/exec"
-	"time"
 	"regexp"
+	"strings"
+	"time"
 )
 
 func color(color int, body string) string {
@@ -40,8 +40,8 @@ func formatTime(timeStr string) string {
 
 func detectSlug() string {
 	gitHead, _ := exec.Command("git", "name-rev", "--name-only", "HEAD").Output()
-	gitRemote, _ := exec.Command("git", "config", "--get", "branch." + strings.TrimSpace(string(gitHead)) + ".remote").Output()
-	gitInfo, _ := exec.Command("git", "config", "--get", "remote." + strings.TrimSpace(string(gitRemote)) + ".url").Output()
+	gitRemote, _ := exec.Command("git", "config", "--get", "branch."+strings.TrimSpace(string(gitHead))+".remote").Output()
+	gitInfo, _ := exec.Command("git", "config", "--get", "remote."+strings.TrimSpace(string(gitRemote))+".url").Output()
 	url := strings.TrimSpace(string(gitInfo))
 	re := regexp.MustCompile(`^(?:https://|git://|git@)github\.com[:/](.*/.+?)(\.git)?$`)
 	return re.FindStringSubmatch(url)[1]
