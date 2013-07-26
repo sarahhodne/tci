@@ -7,7 +7,7 @@ format:
 	go fmt ./...
 
 get-deps:
-	go get -d -v ./..
+	go get -d -v ./...
 
 test:
 	@echo "$(OK_COLOR)==> Testing tci...$(NO_COLOR)"
