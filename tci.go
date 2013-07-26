@@ -38,7 +38,7 @@ func main() {
 					return
 				}
 
-				fmt.Printf("Build #%s: %s\n", build.Number, build.CommitSubject)
+				fmt.Printf("Build #%s:\n", build.Number)
 				fmt.Printf("State:\t\t%s\n", build.State)
 			},
 		},

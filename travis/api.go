@@ -2,7 +2,6 @@ package travis
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,15 +10,22 @@ import (
 const TRAVIS_API_URL = "https://api.travis-ci.org"
 
 type Repository struct {
-	ID          int
-	LastBuildID int
+	ID          int `json:"id"`
+	LastBuildID int `json:"last_build_id"`
 }
 
 type Build struct {
-	ID            int
-	Number        string
-	CommitSubject string
-	State         string
+	ID     int    `json:"id"`
+	Number string `json:"number"`
+	State  string `json:"state"`
+}
+
+type BuildResponse struct {
+	Build Build `json:"build"`
+}
+
+type RepositoryResponse struct {
+	Repository Repository `json:"repo"`
 }
 
 type TravisClient struct {
@@ -37,77 +43,49 @@ func NewClient() *TravisClient {
 }
 
 func (c TravisClient) GetRepository(slug string) (Repository, error) {
-	resp, err := NewRequest(c, fmt.Sprintf("repos/%s", slug), "")
+	body, err := NewRequest(c, fmt.Sprintf("repos/%s", slug), "")
 	if err != nil {
 		return Repository{}, err
 	}
 
-	if resp["repo"] == nil {
-		return Repository{}, errors.New("GetRepository: Could not find repository")
-	}
+	var repo RepositoryResponse
+	err = json.Unmarshal(body, &repo)
 
-	repoInfo := resp["repo"].(map[string]interface{})
-	repo := Repository{
-		ID:          int(repoInfo["id"].(float64)),
-		LastBuildID: int(repoInfo["last_build_id"].(float64)),
-	}
-
-	return repo, nil
+	return repo.Repository, err
 }
 
 func (c TravisClient) GetBuild(id int) (Build, error) {
-	resp, err := NewRequest(c, fmt.Sprintf("builds/%d", id), "")
+	body, err := NewRequest(c, fmt.Sprintf("builds/%d", id), "")
 	if err != nil {
 		return Build{}, err
 	}
 
-	if resp["build"] == nil {
-		return Build{}, errors.New("GetBuild: Could not find build")
-	}
+	var build BuildResponse
+	err = json.Unmarshal(body, &build)
 
-	buildInfo := resp["build"].(map[string]interface{})
-	build := Build{
-		ID:            int(buildInfo["id"].(float64)),
-		Number:        buildInfo["number"].(string),
-		CommitSubject: resp["commit"].(map[string]interface{})["message"].(string),
-		State:         buildInfo["state"].(string),
-	}
-
-	return build, nil
+	return build.Build, err
 }
 
-func NewRequest(c TravisClient, path string, params string) (map[string]interface{}, error) {
+func NewRequest(c TravisClient, path string, params string) ([]byte, error) {
 	client := c.client
 	url := fmt.Sprintf("%s/%s?%s", c.BaseURL, path, params)
 
-	var decodedResponse map[string]interface{}
+	var body []byte
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return decodedResponse, err
+		return body, err
 	}
 
 	req.Header.Set("Accept", "application/json; version=2")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return decodedResponse, err
+		return body, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 
 	resp.Body.Close()
-	if err != nil {
-		return decodedResponse, err
-	}
-
-	err = json.Unmarshal(body, &decodedResponse)
-
-	// Check for bad JSON
-	if err != nil {
-		err = errors.New(fmt.Sprintf("Failed to decode JSON response (HTTP %v): %s", resp.StatusCode, body))
-		return decodedResponse, err
-	}
-
-	return decodedResponse, nil
+	return body, err
 }

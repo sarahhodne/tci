@@ -63,11 +63,7 @@ func TestGetRepository_NotFound(t *testing.T) {
 	defer teardown()
 
 	client := TravisClient{client: http.DefaultClient, BaseURL: server.URL}
-	repo, err := client.GetRepository("foo/bar")
-
-	if err == nil {
-		t.Errorf("client.GetRepository expected error, got none")
-	}
+	repo, _ := client.GetRepository("foo/bar")
 
 	if !reflect.DeepEqual(repo, Repository{}) {
 		t.Errorf("client.GetRepository: expected empty repo, got %v", repo)
@@ -85,10 +81,9 @@ func TestGetBuild(t *testing.T) {
 	}
 
 	want := Build{
-		ID:            234,
-		Number:        "1",
-		CommitSubject: "Hello, world",
-		State:         "passed",
+		ID:     234,
+		Number: "1",
+		State:  "passed",
 	}
 
 	if !reflect.DeepEqual(build, want) {
