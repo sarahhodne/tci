@@ -15,13 +15,24 @@ type Repository struct {
 }
 
 type Build struct {
-	ID     int    `json:"id"`
-	Number string `json:"number"`
-	State  string `json:"state"`
+	ID          int    `json:"id"`
+	Number      string `json:"number"`
+	State       string `json:"state"`
+	PullRequest bool   `json:"pull_request"`
+	Duration    int    `json:"duration"`
+	StartedAt   string `json:"started_at"`
+	FinishedAt  string `json:"finished_at"`
+}
+
+type Commit struct {
+	Message    string `json:"message"`
+	Branch     string `json:"branch"`
+	CompareURL string `json:"compare_url"`
 }
 
 type BuildResponse struct {
-	Build Build `json:"build"`
+	Build  Build  `json:"build"`
+	Commit Commit `json:"commit"`
 }
 
 type RepositoryResponse struct {
@@ -42,28 +53,28 @@ func NewClient() *TravisClient {
 	return c
 }
 
-func (c TravisClient) GetRepository(slug string) (Repository, error) {
+func (c TravisClient) GetRepository(slug string) (RepositoryResponse, error) {
 	body, err := NewRequest(c, fmt.Sprintf("repos/%s", slug), "")
 	if err != nil {
-		return Repository{}, err
+		return RepositoryResponse{}, err
 	}
 
 	var repo RepositoryResponse
 	err = json.Unmarshal(body, &repo)
 
-	return repo.Repository, err
+	return repo, err
 }
 
-func (c TravisClient) GetBuild(id int) (Build, error) {
+func (c TravisClient) GetBuild(id int) (BuildResponse, error) {
 	body, err := NewRequest(c, fmt.Sprintf("builds/%d", id), "")
 	if err != nil {
-		return Build{}, err
+		return BuildResponse{}, err
 	}
 
 	var build BuildResponse
 	err = json.Unmarshal(body, &build)
 
-	return build.Build, err
+	return build, err
 }
 
 func NewRequest(c TravisClient, path string, params string) ([]byte, error) {
