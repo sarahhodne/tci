@@ -1,101 +1,121 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/codegangsta/cli"
-	"github.com/henrikhodne/tci/travis"
 	"os"
-	"os/exec"
-	"regexp"
-	"strings"
-	"time"
+	"reflect"
+	"sort"
 )
 
-func color(color int, body string) string {
-	return fmt.Sprintf("\033[%dm%s\033[0m", color, body)
+var (
+	showHelp    = flag.Bool("h", false, "show help")
+	showVersion = flag.Bool("v", false, "print version string")
+)
+
+type cmd struct {
+	f interface{}
+	a string // args
+	d string // short description
 }
 
-func bold(body string) string {
-	return color(1, body)
+var (
+	selfName = os.Args[0]
+	cmds     = map[string]cmd{}
+	cmdHelp  = map[string]string{}
+)
+
+const (
+	usage1 = `
+Each command takes zero or more options and zero or more arguments.
+In addition, there are some global options that can be used with any command.
+The exit status is 0 on success, 1 otherwise.
+
+Global Options:
+`
+
+	usage2 = `Commands:
+`
+)
+
+func usage() {
+	fmt.Fprintf(os.Stderr, "Use: %s [options] <command> [options] [args]\n", selfName)
+	fmt.Fprint(os.Stderr, usage1)
+	flag.PrintDefaults()
+	fmt.Fprintln(os.Stderr)
+
+	fmt.Fprint(os.Stderr, usage2)
+	var max int
+	var names []string
+	us := make(map[string]string)
+	for k := range cmds {
+		u := k + " " + cmds[k].a
+		if len(u) > max {
+			max = len(u)
+		}
+		names = append(names, k)
+		us[k] = u
+	}
+	sort.Strings(names)
+	for _, k := range names {
+		fmt.Fprintf(os.Stderr, "  %-*s - %s\n", max, us[k], cmds[k].d)
+	}
 }
 
-func pad(str string, length int) string {
-	return fmt.Sprintf("%-*s", length, str)
-}
-
-func printInfo(name, info string) {
-	fmt.Printf("%s%s\n", bold(color(33, pad(name, 15))), info)
-}
-
-func formatDuration(seconds int) string {
-	return (time.Duration(seconds) * time.Second).String()
-}
-
-func formatTime(timeStr string) string {
-	t, _ := time.Parse(time.RFC3339, timeStr)
-	loc, _ := time.LoadLocation("Local")
-
-	return t.In(loc).Format("2006-01-02 15:04:05")
-}
-
-func detectSlug() string {
-	gitHead, _ := exec.Command("git", "name-rev", "--name-only", "HEAD").Output()
-	gitRemote, _ := exec.Command("git", "config", "--get", "branch."+strings.TrimSpace(string(gitHead))+".remote").Output()
-	gitInfo, _ := exec.Command("git", "config", "--get", "remote."+strings.TrimSpace(string(gitRemote))+".url").Output()
-	url := strings.TrimSpace(string(gitInfo))
-	re := regexp.MustCompile(`^(?:https://|git://|git@)github\.com[:/](.*/.+?)(\.git)?$`)
-	return re.FindStringSubmatch(url)[1]
+func bail(e error) {
+	fmt.Fprintln(os.Stderr, "Error:", e)
+	os.Exit(1)
 }
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "tci"
-	app.Usage = "A command-line tool for interacting with Travis CI"
-	app.Version = "0.0.1"
+	flag.Usage = usage
+	flag.Parse()
 
-	app.Flags = []cli.Flag{
-		cli.StringFlag{"repo", detectSlug(), "The repository to interact with. Example: green-eggs/ham"},
+	if *showHelp {
+		usage()
+		return
 	}
 
-	app.Commands = []cli.Command{
-		{
-			Name:      "show",
-			ShortName: "s",
-			Usage:     "Displays generic information about a build",
-			Action: func(c *cli.Context) {
-				slug := c.GlobalString("repo")
-				client := travis.NewClient()
-
-				repoResp, _ := client.GetRepository(slug)
-				if repoResp == (travis.RepositoryResponse{}) {
-					println("Couldn't find repository.")
-					return
-				}
-
-				buildResp, _ := client.GetBuild(repoResp.Repository.LastBuildID)
-				if buildResp == (travis.BuildResponse{}) {
-					println("Couldn't find build.")
-					return
-				}
-
-				build := buildResp.Build
-				commit := buildResp.Commit
-
-				fmt.Printf(bold("Build #%s: %s\n"), build.Number, strings.Split(commit.Message, "\n")[0])
-				printInfo("State", build.State)
-				if build.PullRequest {
-					printInfo("Type", "pull request")
-				} else {
-					printInfo("Type", "push")
-				}
-				printInfo("Branch", commit.Branch)
-				printInfo("Compare URL", commit.CompareURL)
-				printInfo("Duration", formatDuration(build.Duration))
-				printInfo("Started", formatTime(build.StartedAt))
-				printInfo("Finished", formatTime(build.FinishedAt))
-			},
-		},
+	if *showVersion {
+		fmt.Println("tci", version)
+		return
 	}
 
-	app.Run(os.Args)
+	if flag.NArg() < 1 {
+		fmt.Fprintf(os.Stderr, "%s: missing command\n", os.Args[0])
+		usage()
+		os.Exit(127)
+	}
+
+	cmd := flag.Arg(0)
+
+	c, ok := cmds[cmd]
+	if !ok {
+		fmt.Fprintln(os.Stderr, "Unknown command:", cmd)
+		usage()
+		os.Exit(127)
+	}
+
+	os.Args = flag.Args()
+	flag.Parse()
+
+	if *showHelp {
+		help(cmd)
+		return
+	}
+
+	args := flag.Args()
+	ft := reflect.TypeOf(c.f)
+	if len(args) != ft.NumIn() {
+		fmt.Fprintf(os.Stderr, "%s: wrong number of arguments\n", cmd)
+		help(cmd)
+		os.Exit(127)
+	}
+
+	vals := make([]reflect.Value, len(args))
+	for i, s := range args {
+		vals[i] = reflect.ValueOf(s)
+	}
+	fv := reflect.ValueOf(c.f)
+	fv.Call(vals)
 }
