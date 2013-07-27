@@ -16,6 +16,13 @@ $ go install github.com/henrikhodne/tci
 
 ## Usage
 
+### encrypt
+
+```
+$ tci encrypt FOO=bar
+secure: "Tv7eONEJGIB/Mr563jIO06ffTWXccZ5KrEBuxGAysWnPR9hHX3rXCUSFTdAEZZ5IszG2aMAuDmYQPK/lS9gnjzKlBEZtcJ3hps/+RXmB/ooMYa4+RUiuRKZNeNFYKlOrMnPueXVXaW+9typQ0JAZQxf8B9K9tzH4Hq5CUQclED0="
+```
+
 ### show
 
 ```

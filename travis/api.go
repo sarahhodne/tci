@@ -39,6 +39,10 @@ type RepositoryResponse struct {
 	Repository Repository `json:"repo"`
 }
 
+type KeyResponse struct {
+	Key string `json:"key"`
+}
+
 type TravisClient struct {
 	client *http.Client
 
@@ -63,6 +67,18 @@ func (c TravisClient) GetRepository(slug string) (RepositoryResponse, error) {
 	err = json.Unmarshal(body, &repo)
 
 	return repo, err
+}
+
+func (c TravisClient) GetRepositoryKey(slug string) (KeyResponse, error) {
+	body, err := NewRequest(c, fmt.Sprintf("repos/%s/key", slug), "")
+	if err != nil {
+		return KeyResponse{}, err
+	}
+
+	var key KeyResponse
+	err = json.Unmarshal(body, &key)
+
+	return key, err
 }
 
 func (c TravisClient) GetBuild(id int) (BuildResponse, error) {
